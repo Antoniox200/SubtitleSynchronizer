@@ -16,7 +16,7 @@ FFmpeg is a free and open-source software project consisting of a large suite of
 
 To install FFmpeg on MacOS, you can use the Homebrew package manager:
 
-`brew install ffmpeg`
+```brew install ffmpeg```
 
 #### Windows:
 
@@ -28,11 +28,11 @@ Next, you need to install the FFSubSync Python package. It's compatible with Pyt
 
 You can install it using pip:
 
-`pip install ffsubsync`
+```pip install ffsubsync```
 
 If you want to live dangerously, you can grab the latest version as follows:
 
-`pip install git+https://github.com/smacke/ffsubsync@latest`
+```pip install git+https://github.com/smacke/ffsubsync@latest```
 
 ## Usage
 
@@ -44,7 +44,7 @@ For Windows users, you can simply run the .exe file included in this repository.
 
 For users on other platforms (or if you want to run the Python script directly), you can do so with the following command:
 
-`python ffsubsync_gui.py`
+```python SubtitleSynchronizer.py```
 
 Once the application is open, drag and drop your video and subtitle files into the appropriate boxes, then click the 'Sync' button to synchronize your subtitles.
 
