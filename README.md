@@ -38,7 +38,7 @@ If you want to live dangerously, you can grab the latest version as follows:
 
 ### Windows:
 
-For Windows users, you can simply run the .exe file included in this repository.
+For Windows users, you can simply run the .exe file that can be downloaded [here](https://drive.google.com/uc?export=download&id=1lJLQKLXT1vyP3bhHfYZbW_LmAlHawPX9).
 
 ### Other platforms:
 
