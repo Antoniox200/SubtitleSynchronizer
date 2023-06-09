@@ -1,56 +1,80 @@
-from moviepy.editor import VideoFileClip
-from pydub import AudioSegment, silence
-# from fuzzywuzzy import fuzz
-import rapidfuzz as fuzz
-import speech_recognition as sr
-import pysrt
 import os
+import subprocess
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QLabel
+from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QDragEnterEvent, QDropEvent, QDrag
 
-# Load the video file and convert it to an audio file
-clip = VideoFileClip("The.Sopranos.S05E01.DD5.1.720p.HDTV.x264-g8128.mkv")
-clip.audio.write_audiofile("sample.wav")
+class FFSubSyncGUI(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("Subtitle Synchronizer")
+        self.resize(800, 600)  # Set the default size of the window to 800x600
+
+        self.layout = QVBoxLayout()
+
+        self.label_video = QLabel('Drag and Drop Video File Here')
+        self.label_video.setAcceptDrops(True)
+        self.label_video.setFrameStyle(QLabel.Panel | QLabel.Sunken)
+        self.label_video.setAlignment(Qt.AlignCenter)
+        self.label_video.dragEnterEvent = self.dragEnterEvent
+        self.label_video.dropEvent = self.dropEvent_video
+
+        self.layout.addWidget(self.label_video)
+
+        self.label_unsync_sub = QLabel('Drag and Drop Unsync Subtitle File Here')
+        self.label_unsync_sub.setAcceptDrops(True)
+        self.label_unsync_sub.setFrameStyle(QLabel.Panel | QLabel.Sunken)
+        self.label_unsync_sub.setAlignment(Qt.AlignCenter)
+        self.label_unsync_sub.dragEnterEvent = self.dragEnterEvent
+        self.label_unsync_sub.dropEvent = self.dropEvent_unsync_sub
+
+        self.layout.addWidget(self.label_unsync_sub)
+
+        self.sync_button = QPushButton('Sync')
+        self.sync_button.clicked.connect(self.sync_subtitles)
+
+        self.layout.addWidget(self.sync_button)
+
+        self.setLayout(self.layout)
+
+        self.video_file = None
+        self.unsync_sub = None
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dropEvent_video(self, event: QDropEvent):
+        if event.mimeData().hasUrls():
+            url: QUrl = event.mimeData().urls()[0]
+            self.video_file = url.toLocalFile()
+            self.label_video.setText(self.video_file)
+
+    def dropEvent_unsync_sub(self, event: QDropEvent):
+        if event.mimeData().hasUrls():
+            url: QUrl = event.mimeData().urls()[0]
+            self.unsync_sub = url.toLocalFile()
+            self.label_unsync_sub.setText(self.unsync_sub)
+
+    def sync_subtitles(self):
+        if self.video_file and self.unsync_sub:
+            output_dir = os.path.dirname(self.unsync_sub)
+            base_name = os.path.basename(self.unsync_sub)
+            output_sub = os.path.join(output_dir, f'synchronized{base_name}')  # Append "synchronized" to the original filename
+
+            try:
+                subprocess.call(["ffsubsync", self.video_file, "-i", self.unsync_sub, "-o", output_sub])
+                print(f'Synchronized subtitle file has been saved to {output_sub}')
+            except Exception as e:
+                print(f'Error: {str(e)}')
+        else:
+            print('Please provide valid Video file and Unsync Subtitle file.')
 
 
-print("Audio file created")
-# Detect silence and split the audio into chunks
-audio = AudioSegment.from_file("sample.wav")
-nonsilent_chunks = silence.split_on_silence(audio, min_silence_len=1000, silence_thresh=-32)
-print("Audio file split into chunks")
-
-
-# Create a speech recognizer
-recognizer = sr.Recognizer()
-
-# Load the subtitle file
-subs = pysrt.open('The Sopranos - 4x01 - For All Debts Public and Private.en.srt')
-
-# Iterate over each chunk
-for i, chunk in enumerate(nonsilent_chunks):
-    print(f"Processing chunk {i}")
-    # Save chunk to a temporary file
-    chunk.export("chunk.wav", format="wav")
-
-    with sr.AudioFile('chunk.wav') as source:
-        # Read the audio file
-        audio = recognizer.record(source)
-
-        # Use Google Web Speech API to recognize the speech
-        try:
-            result = recognizer.recognize_google(audio)
-        except sr.UnknownValueError:
-            result = ""
-        except sr.RequestError as e:
-            print("Could not request results; {0}".format(e))
-
-        # Compare result with subtitle text using fuzzy matching
-        if i < len(subs):
-            ratio = fuzz.ratio(result, subs[i].text)
-            if ratio < 70:  # You may need to adjust this threshold
-                print(f"Discrepancy found at chunk {i}:")
-                print(f"Speech recognition result: {result}")
-                print(f"Subtitle text: {subs[i].text}")
-                print(f"Matching ratio: {ratio}")
-
-# Remove temporary file
-os.remove("chunk.wav")
-os.remove("sample.wav")
+app = QApplication([])
+window = FFSubSyncGUI()
+window.show()
+app.exec_()
